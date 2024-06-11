@@ -26,6 +26,7 @@
 #include <faiss/utils/bf16.h>
 #include <faiss/utils/fp16.h>
 #include <faiss/utils/utils.h>
+#include <iostream>
 
 namespace faiss {
 
@@ -648,7 +649,9 @@ struct Quantizer8bitDirectSigned<1> : ScalarQuantizer::SQuantizer {
             : d(d) {}
 
     void encode_vector(const float* x, uint8_t* code) const final {
+//        std::cout << "\nNaveen: Inside Quantizer8bitDirectSigned encode_vector: " << std::flush;
         for (size_t i = 0; i < d; i++) {
+            std::cout << x[i] << ", " << std::flush;
             code[i] = (uint8_t)(x[i] + 128);
         }
     }
@@ -661,6 +664,7 @@ struct Quantizer8bitDirectSigned<1> : ScalarQuantizer::SQuantizer {
 
     FAISS_ALWAYS_INLINE float reconstruct_component(const uint8_t* code, int i)
             const {
+//        std::cout << "\nNaveen: Inside Quantizer8bitDirectSigned reconstruct_component: " <<  code[i]-128 << std::flush;
         return code[i] - 128;
     }
 };
@@ -674,6 +678,7 @@ struct Quantizer8bitDirectSigned<8> : Quantizer8bitDirectSigned<1> {
 
     FAISS_ALWAYS_INLINE __m256
     reconstruct_8_components(const uint8_t* code, int i) const {
+//        std::cout << "\nNaveen: Inside Quantizer8bitDirectSigned reconstruct_8_components: " << std::flush;
         __m128i x8 = _mm_loadl_epi64((__m128i*)(code + i)); // 8 * int8
         __m256i y8 = _mm256_cvtepu8_epi32(x8);              // 8 * int32
         __m256i c8 = _mm256_set1_epi32(128);
@@ -738,6 +743,7 @@ ScalarQuantizer::SQuantizer* select_quantizer_1(
         case ScalarQuantizer::QT_8bit_direct:
             return new Quantizer8bitDirect<SIMDWIDTH>(d, trained);
         case ScalarQuantizer::QT_8bit_direct_signed:
+//            std::cout << "\nNaveen: Inside select_quantizer_1: " << std::flush;
             return new Quantizer8bitDirectSigned<SIMDWIDTH>(d, trained);
     }
     FAISS_THROW_MSG("unknown qtype");
@@ -1185,6 +1191,7 @@ struct DCTemplate<Quantizer, Similarity, 1> : SQDistanceComputer {
             : quant(d, trained) {}
 
     float compute_distance(const float* x, const uint8_t* code) const {
+//        std::cout << "\nNaveen: Inside compute_distance<1>: " << std::flush;
         Similarity sim(x);
         sim.begin();
         for (size_t i = 0; i < quant.d; i++) {
@@ -1216,6 +1223,7 @@ struct DCTemplate<Quantizer, Similarity, 1> : SQDistanceComputer {
     }
 
     float query_to_code(const uint8_t* code) const final {
+//        std::cout << "\nNaveen: Inside query_to_code<1>: " << std::flush;
         return compute_distance(q, code);
     }
 };
@@ -1540,6 +1548,7 @@ SQDistanceComputer* select_distance_computer(
                         SIMDWIDTH>(d, trained);
             }
         case ScalarQuantizer::QT_8bit_direct_signed:
+//            std::cout << "\nNaveen: Inside select_distance_computer: " << std::flush;
             return new DCTemplate<
                     Quantizer8bitDirectSigned<SIMDWIDTH>,
                     Sim,
@@ -1568,6 +1577,7 @@ void ScalarQuantizer::set_derived_sizes() {
         case QT_8bit_uniform:
         case QT_8bit_direct:
         case QT_8bit_direct_signed:
+//            std::cout << "\nNaveen: Inside set_derived_sizes: " << std::flush;
             code_size = d;
             bits = 8;
             break;
@@ -1673,6 +1683,7 @@ SQDistanceComputer* ScalarQuantizer::get_distance_computer(
     } else
 #endif
     {
+//        std::cout << "\nNaveen: Inside get_distance_computer: " << std::flush;
         if (metric == METRIC_L2) {
             return select_distance_computer<SimilarityL2<1>>(qtype, d, trained);
         } else {
@@ -1972,7 +1983,7 @@ InvertedListScanner* sel1_InvertedListScanner(
                         SIMDWIDTH>>(sq, quantizer, store_pairs, sel, r);
             }
         case ScalarQuantizer::QT_8bit_direct_signed:
-            sel2_InvertedListScanner<DCTemplate<
+            return sel2_InvertedListScanner<DCTemplate<
                     Quantizer8bitDirectSigned<SIMDWIDTH>,
                     Similarity,
                     SIMDWIDTH>>(sq, quantizer, store_pairs, sel, r);

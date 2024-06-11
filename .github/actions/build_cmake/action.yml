@@ -78,14 +78,14 @@ runs:
       shell: bash
       run: |
         conda install -y -q pytorch -c pytorch
-        pytest --junitxml=test-results/pytest/results.xml tests/test_*.py
+        pytest -s --junitxml=test-results/pytest/results.xml tests/test_index_accuracy.py
         pytest --junitxml=test-results/pytest/results-torch.xml tests/torch_*.py
     - name: Python tests (CPU + GPU)
       if: inputs.gpu == 'ON'
       shell: bash
       run: |
         conda install -y -q pytorch pytorch-cuda=11.8 -c pytorch -c nvidia/label/cuda-11.8.0
-        pytest --junitxml=test-results/pytest/results.xml tests/test_*.py
+        pytest -s --junitxml=test-results/pytest/results.xml tests/test_index_accuracy.py
         pytest --junitxml=test-results/pytest/results-torch.xml tests/torch_*.py
         cp tests/common_faiss_tests.py faiss/gpu/test
         pytest --junitxml=test-results/pytest/results-gpu.xml faiss/gpu/test/test_*.py

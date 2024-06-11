@@ -19,6 +19,7 @@
 #include <faiss/impl/IDSelector.h>
 #include <faiss/impl/ScalarQuantizer.h>
 #include <faiss/utils/utils.h>
+#include<iostream>
 
 namespace faiss {
 
@@ -54,11 +55,12 @@ void IndexScalarQuantizer::search(
         idx_t* labels,
         const SearchParameters* params) const {
     const IDSelector* sel = params ? params->sel : nullptr;
-
+//    std::cout << "\nNaveen: Inside search of IndexSQ: " << std::flush;
     FAISS_THROW_IF_NOT(k > 0);
     FAISS_THROW_IF_NOT(is_trained);
     FAISS_THROW_IF_NOT(
             metric_type == METRIC_L2 || metric_type == METRIC_INNER_PRODUCT);
+//    std::cout << "\nNaveen: completed assertions: " << std::flush;
 
 #pragma omp parallel
     {
@@ -66,13 +68,14 @@ void IndexScalarQuantizer::search(
                 sq.select_InvertedListScanner(metric_type, nullptr, true, sel));
 
         scanner->list_no = 0; // directly the list number
-
+//        std::cout << "\nNaveen: called select_InvertedListScanner: " << std::flush;
 #pragma omp for
         for (idx_t i = 0; i < n; i++) {
             float* D = distances + k * i;
             idx_t* I = labels + k * i;
             // re-order heap
             if (metric_type == METRIC_L2) {
+//                std::cout << "\nNaveen: calling maxheap_heapify: " << std::flush;
                 maxheap_heapify(k, D, I);
             } else {
                 minheap_heapify(k, D, I);
